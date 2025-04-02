@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 
@@ -11,54 +11,34 @@ const RatingPage = ({ nameOrInitials, rating, onRatingChange }) => {
     
     // Scene setup
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf5f5dc); // Beige background
     
     // Camera setup
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
     
     // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0);
     currentMount.appendChild(renderer.domElement);
     
-    // Create a rotating torus
-    const geometry = new THREE.TorusGeometry(3, 0.5, 16, 100);
+    // Create a minimalistic geometry
+    const geometry = new THREE.TorusKnotGeometry(2, 0.3, 128, 16);
     
-    // Create gradient material
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        colorA: { value: new THREE.Color(0xff0099) },
-        colorB: { value: new THREE.Color(0x493240) }
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float time;
-        uniform vec3 colorA;
-        uniform vec3 colorB;
-        varying vec2 vUv;
-        
-        void main() {
-          vec3 color = mix(colorA, colorB, vUv.x + sin(time * 0.5) * 0.5);
-          gl_FragColor = vec4(color, 1.0);
-        }
-      `,
-      wireframe: true
+    // Create a simple material
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xd3c7a6, // Beige color
+      wireframe: true,
+      transparent: true,
+      opacity: 0.7
     });
     
-    const torus = new THREE.Mesh(geometry, material);
-    scene.add(torus);
+    const torusKnot = new THREE.Mesh(geometry, material);
+    scene.add(torusKnot);
     
-    // Add some particles for depth
+    // Add a few subtle particles
     const particlesGeometry = new THREE.BufferGeometry();
-    const particlesCount = 2000;
+    const particlesCount = 300; // Fewer particles for minimalism
     
     const posArray = new Float32Array(particlesCount * 3);
     
@@ -69,34 +49,36 @@ const RatingPage = ({ nameOrInitials, rating, onRatingChange }) => {
     particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
     
     const particlesMaterial = new THREE.PointsMaterial({
-      size: 0.02,
-      color: 0xffffff,
+      size: 0.01,
+      color: 0xc2b280, // Darker beige for particles
       transparent: true,
-      opacity: 0.5,
-      blending: THREE.AdditiveBlending
+      opacity: 0.3
     });
     
     const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
     scene.add(particlesMesh);
     
-    // Animation
-    let time = 0;
-    const clock = new THREE.Clock();
+    // Add lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
     
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+    
+    // Animation
     const animate = () => {
-      time += clock.getDelta();
-      material.uniforms.time.value = time;
+      requestAnimationFrame(animate);
       
-      torus.rotation.x += 0.003;
-      torus.rotation.y += 0.005;
-      particlesMesh.rotation.y += 0.001;
+      torusKnot.rotation.x += 0.002;
+      torusKnot.rotation.y += 0.003;
+      particlesMesh.rotation.y += 0.0005;
       
-      // Make torus size responsive to the rating
-      const scale = 0.5 + (rating / 100) * 1.5;
-      torus.scale.set(scale, scale, scale);
+      // Make torus size responsive to the rating but with a more subtle effect
+      const scale = 0.7 + (rating / 100) * 0.7;
+      torusKnot.scale.set(scale, scale, scale);
       
       renderer.render(scene, camera);
-      requestAnimationFrame(animate);
     };
     
     animate();
